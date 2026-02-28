@@ -1,0 +1,22 @@
+# Server Bot Configuration - Шаблон
+# Скопируйте этот файл в config.py и заполните значениями
+
+# ========== BOT TOKEN ==========
+# Получите токен в @BotFather
+# 1. Откройте @BotFather в Telegram
+# 2. Отправьте /newbot
+# 3. Следуйте инструкциям
+# 4. Скопируйте токен (выглядит как "123456789:ABCdef...")
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+
+# ========== OWNER ID ==========
+# Ваш Telegram ID (узнайте через @userinfobot)
+# 1. Откройте @userinfobot в Telegram
+# 2. Нажмите Start
+# 3. Скопируйте ваш Id (число)
+OWNER_ID = 0
+
+# ========== ALLOWED USERS ==========
+# Список Telegram ID пользователей с доступом к боту
+# Добавьте ID других пользователей, если нужно
+ALLOWED_USERS = [OWNER_ID]

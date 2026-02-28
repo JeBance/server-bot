@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Конфигурация с токеном
+config.py
+!config.py.example
+
+# Логи
+*.log
+
+# IDE
+.vscode/
+.idea/

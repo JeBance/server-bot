@@ -1,0 +1,20 @@
+[Unit]
+Description=Server Control Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/git/server-bot
+Environment="PATH=/root/git/server-bot/venv/bin"
+ExecStart=/root/git/server-bot/venv/bin/python /root/git/server-bot/bot.py
+Restart=on-failure
+RestartSec=10
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
