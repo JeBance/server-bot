@@ -57,6 +57,10 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/ssh - Статус SSH\n\n"
         "🔄 **Бэкапы:**\n"
         "/backup - Создать бэкап\n\n"
+        "🔧 **Система:**\n"
+        "/reboot - Перезагрузка сервера\n"
+        "/ping - Проверка связи\n"
+        "/whoami - Информация о пользователе\n\n"
         "❓ **Помощь:**\n"
         "/help - Список команд"
     )
@@ -109,6 +113,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 **🔧 Система:**
 /ping - Проверка связи
 /whoami - Информация о пользователе
+/reboot - Перезагрузка сервера
 /help - Эта справка
 """
     await update.message.reply_text(help_text)
@@ -580,7 +585,7 @@ async def cmd_whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         await update.message.reply_text("❌ Доступ запрещён")
         return
-    
+
     user_info = f"""
 👤 **Информация:**
 
@@ -590,6 +595,24 @@ async def cmd_whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
 **Доступ:** {'✅ Разрешён' if is_authorized(update.effective_user.id) else '❌ Запрещён'}
 """
     await update.message.reply_text(user_info)
+
+async def cmd_reboot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Перезагрузка сервера"""
+    if not is_authorized(update.effective_user.id):
+        await update.message.reply_text("❌ Доступ запрещён")
+        return
+
+    msg = await update.message.reply_text("🔄 Перезагрузка сервера...")
+
+    try:
+        subprocess.check_output(
+            "/sbin/reboot",
+            shell=True, stderr=subprocess.STDOUT, env={'PATH': '/usr/bin:/usr/sbin:/bin:/sbin'}
+        ).decode()
+        await msg.edit_text("✅ Сервер перезагружается...")
+    except Exception as e:
+        logger.error(f"Error in cmd_reboot: {e}")
+        await msg.edit_text(f"❌ Ошибка перезагрузки: {e}")
 
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Неизвестная команда или текст"""
@@ -661,6 +684,7 @@ def main():
     # Система
     application.add_handler(CommandHandler("ping", cmd_ping))
     application.add_handler(CommandHandler("whoami", cmd_whoami))
+    application.add_handler(CommandHandler("reboot", cmd_reboot))
     
     # Обработчик неизвестных команд и текстовых сообщений
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, unknown_command))
