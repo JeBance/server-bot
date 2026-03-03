@@ -7,7 +7,7 @@ Server Control Telegram Bot
 import subprocess
 import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, Defaults, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, ContextTypes, Defaults, MessageHandler, filters, JobQueue
 
 # ========== НАСТРОЙКИ ==========
 # Импорт из config.py
@@ -614,6 +614,17 @@ async def cmd_reboot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error in cmd_reboot: {e}")
         await msg.edit_text(f"❌ Ошибка перезагрузки: {e}")
 
+async def notify_startup(context: ContextTypes.DEFAULT_TYPE):
+    """Отправка уведомления о запуске бота"""
+    if OWNER_ID:
+        try:
+            await context.bot.send_message(
+                chat_id=OWNER_ID,
+                text="🤖 **Бот запущен**\n\n✅ Сервер-бот успешно стартовал и готов к работе.\n\nИспользуйте /help для списка команд."
+            )
+        except Exception as e:
+            logger.error(f"Не удалось отправить уведомление о запуске: {e}")
+
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Неизвестная команда или текст"""
     if not is_authorized(update.effective_user.id):
@@ -645,9 +656,9 @@ def main():
         print("❌ Ошибка: Установите BOT_TOKEN в config.py")
         return
     
-    # Создание приложения с поддержкой Markdown
-    application = Application.builder().token(BOT_TOKEN).defaults(Defaults(parse_mode='Markdown')).build()
-    
+    # Создание приложения с поддержкой Markdown и JobQueue
+    application = Application.builder().token(BOT_TOKEN).defaults(Defaults(parse_mode='Markdown')).job_queue(JobQueue()).build()
+
     # Добавление обработчиков
     application.add_handler(CommandHandler("start", cmd_start))
     application.add_handler(CommandHandler("help", cmd_help))
@@ -689,9 +700,13 @@ def main():
     # Обработчик неизвестных команд и текстовых сообщений
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, unknown_command))
     application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
-    
+
     # Запуск
     print("🤖 Бот запущен...")
+
+    # Отправка уведомления о запуске
+    application.job_queue.run_once(notify_startup, when=0)
+
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
