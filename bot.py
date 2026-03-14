@@ -115,6 +115,9 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /whoami - Информация о пользователе
 /reboot - Перезагрузка сервера
 /help - Эта справка
+
+**📥 Загрузка файлов:**
+Просто отправьте боту файл/фото/аудио/видео — он сохранит в `/root/share/`
 """
     await update.message.reply_text(help_text)
 
@@ -625,15 +628,75 @@ async def notify_startup(context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Не удалось отправить уведомление о запуске: {e}")
 
+async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Скачивание документов"""
+    if not is_authorized(update.effective_user.id):
+        return
+
+    file = await update.message.document.get_file()
+    file_name = update.message.document.file_name or f"file_{update.message.document.file_id}"
+    file_path = f"/root/share/{file_name}"
+    
+    await file.download_to_drive(file_path)
+    await update.message.reply_text(f"✅ Файл сохранён:\n`{file_path}`")
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Скачивание фотографий"""
+    if not is_authorized(update.effective_user.id):
+        return
+
+    # Получаем фото в наилучшем качестве (последний в списке)
+    photo = update.message.photo[-1]
+    file = await photo.get_file()
+    file_path = f"/root/share/photo_{photo.file_id}.jpg"
+    
+    await file.download_to_drive(file_path)
+    await update.message.reply_text(f"✅ Фото сохранено:\n`{file_path}`")
+
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Скачивание голосовых сообщений"""
+    if not is_authorized(update.effective_user.id):
+        return
+
+    file = await update.message.voice.get_file()
+    file_path = f"/root/share/voice_{update.message.voice.file_id}.ogg"
+    
+    await file.download_to_drive(file_path)
+    await update.message.reply_text(f"✅ Голосовое сохранено:\n`{file_path}`")
+
+async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Скачивание аудио файлов"""
+    if not is_authorized(update.effective_user.id):
+        return
+
+    file = await update.message.audio.get_file()
+    file_name = update.message.audio.file_name or f"audio_{update.message.audio.file_id}.mp3"
+    file_path = f"/root/share/{file_name}"
+    
+    await file.download_to_drive(file_path)
+    await update.message.reply_text(f"✅ Аудио сохранено:\n`{file_path}`")
+
+async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Скачивание видео файлов"""
+    if not is_authorized(update.effective_user.id):
+        return
+
+    file = await update.message.video.get_file()
+    file_name = update.message.video.file_name or f"video_{update.message.video.file_id}.mp4"
+    file_path = f"/root/share/{file_name}"
+    
+    await file.download_to_drive(file_path)
+    await update.message.reply_text(f"✅ Видео сохранено:\n`{file_path}`")
+
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Неизвестная команда или текст"""
     if not is_authorized(update.effective_user.id):
         await update.message.reply_text("❌ Доступ запрещён")
         return
-    
+
     # Получаем текст сообщения
     text = update.message.text or ""
-    
+
     # Если это команда
     if text.startswith('/'):
         await update.message.reply_text(
@@ -696,7 +759,14 @@ def main():
     application.add_handler(CommandHandler("ping", cmd_ping))
     application.add_handler(CommandHandler("whoami", cmd_whoami))
     application.add_handler(CommandHandler("reboot", cmd_reboot))
-    
+
+    # Обработчики файлов
+    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    application.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    application.add_handler(MessageHandler(filters.AUDIO, handle_audio))
+    application.add_handler(MessageHandler(filters.VIDEO, handle_video))
+
     # Обработчик неизвестных команд и текстовых сообщений
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, unknown_command))
     application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
